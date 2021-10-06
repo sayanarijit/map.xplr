@@ -39,7 +39,7 @@ None
   }
 
   -- Type `Ms` to map files to a single command as arguments.
-  -- Type `Mm` to map files to as arguments to multiple commands in separate
+  -- Type `Mm` to map files as arguments to multiple commands in separate
   -- lines.
   ```
 
