@@ -15,6 +15,10 @@ local function parse_args(args)
     args.placeholder = "{}"
   end
 
+  if args.prefer_multi_map == nil then
+    args.prefer_multi_map = false
+  end
+
   return args
 end
 
@@ -131,45 +135,25 @@ local function setup(args)
 
   args = parse_args(args)
 
-  xplr.config.modes.builtin[args.mode].key_bindings.on_key[args.key] = {
-    help = "map",
-    messages = {
-      "PopMode",
-      { SwitchModeCustom = "map" },
-    },
-  }
-
-  xplr.config.modes.custom.map = {
-    name = "map",
-    key_bindings = {
-      on_key = {
-        s = {
-          help = "single line",
-          messages = {
-            "PopMode",
-            { SwitchMode = "map_single" },
-            { SetInputBuffer = "" },
-          },
-        },
-        m = {
-          help = "multi line",
-          messages = {
-            "PopMode",
-            { SwitchMode = "map_multi" },
-            { SetInputBuffer = "" },
-          },
-        },
-        esc = {
-          help = "cancel",
-          messages = { "PopMode" },
-        },
-        ["ctrl-c"] = {
-          help = "terminate",
-          messages = { "Terminate" },
-        },
+  if args.prefer_multi_map then
+    xplr.config.modes.builtin[args.mode].key_bindings.on_key[args.key] = {
+      help = "map to multiple commands",
+      messages = {
+        "PopMode",
+        { BufferInput = "" },
+        { SwitchModeCustomKeepingInputBuffer = "map_multi" },
       },
-    },
-  }
+    }
+  else
+    xplr.config.modes.builtin[args.mode].key_bindings.on_key[args.key] = {
+      help = "map to single command",
+      messages = {
+        "PopMode",
+        { BufferInput = "" },
+        { SwitchModeCustomKeepingInputBuffer = "map_single" },
+      },
+    }
+  end
 
   create_map_mode(
     xplr.config.modes.custom,

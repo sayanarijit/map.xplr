@@ -36,11 +36,11 @@ None
     mode = "default",
     key = "M",
     placeholder = "{}"
+    prefer_multi_map = false,
   }
 
-  -- Type `Ms` to map files to a single command as arguments.
-  -- Type `Mm` to map files as arguments to multiple commands in separate
-  -- lines.
+  -- Type `M` to switch to single map mode.
+  -- Then press `tab` to switch between single and multi map modes.
   ```
 
 ## Features
