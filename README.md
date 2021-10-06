@@ -1,17 +1,11 @@
-xplr plugin template
-====================
+Visually inspect and interactively execute batch commands using xplr.
+It's like [xargs.xplr](https://github.com/sayanarijit/xargs.xplr) but better.
 
-Use this template to [write your own xplr plugin](https://arijitbasu.in/xplr/en/writing-plugins.html).
+## Requirements
 
+None
 
-Requirements
-------------
-
-- Some tool
-
-
-Installation
-------------
+## Installation
 
 ### Install manually
 
@@ -26,26 +20,30 @@ Installation
   ```bash
   mkdir -p ~/.config/xplr/plugins
 
-  git clone https://github.com/me/{plugin}.xplr ~/.config/xplr/plugins/{plugin}
+  git clone https://github.com/sayanarijit/map.xplr ~/.config/xplr/plugins/map
   ```
 
 - Require the module in `~/.config/xplr/init.lua`
 
   ```lua
-  require("{plugin}").setup()
-  
+  require("map").setup()
+
   -- Or
-  
-  require("{plugin}").setup{
-    mode = "action",
-    key = ":",
+
+  require("map").setup{
+    mode = "default",
+    key = "M",
+    placeholder = "{}"
   }
 
-  -- Type `::` and enjoy.
+  -- Type `Ms` to map files to a single command as arguments.
+  -- Type `Mm` to map files to as arguments to multiple commands in separate
+     lines.
   ```
 
+## Features
 
-Features
---------
-
-- Some cool feature
+- All the great features from [xargs.xplr](https://github.com/sayanarijit/xargs.xplr).
+- File paths will be auto quoted.
+- Press `tab` to easily switch map mode without losing any context.
+- Visually inspect and interactively edit commands.
