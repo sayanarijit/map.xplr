@@ -41,7 +41,22 @@ end
 local function create_map_mode(custom, mode, func, layout, switch)
   custom["map_" .. mode] = {
     name = "map " .. mode,
-    layout = layout,
+    layout = {
+      Vertical = {
+        config = {
+          constraints = {
+            { Length = 1 },
+            { Min = 1 },
+            { Length = 3 },
+          },
+        },
+        splits = {
+          "Nothing",
+          layout,
+          "InputAndLogs",
+        },
+      },
+    },
     key_bindings = {
       on_key = {
         enter = {
@@ -50,10 +65,6 @@ local function create_map_mode(custom, mode, func, layout, switch)
             { CallLua = func },
           },
         },
-        backspace = {
-          help = "remove last character",
-          messages = { "RemoveInputBufferLastCharacter" },
-        },
         tab = {
           help = "switch to " .. switch .. " mapping",
           messages = {
@@ -61,19 +72,12 @@ local function create_map_mode(custom, mode, func, layout, switch)
             { SwitchModeCustomKeepingInputBuffer = "map_" .. switch },
           },
         },
-        ["ctrl-u"] = {
-          help = "remove line",
-          messages = {
-            { SetInputBuffer = "" },
-          },
-        },
-        ["ctrl-w"] = {
-          help = "remove last word",
-          messages = { "RemoveInputBufferLastWord" },
-        },
         esc = {
           help = "cancel",
-          messages = { "PopMode", "ClearSelection" },
+          messages = {
+            "PopMode",
+            "ClearSelection",
+          },
         },
         ["ctrl-c"] = {
           help = "terminate",
@@ -81,7 +85,7 @@ local function create_map_mode(custom, mode, func, layout, switch)
         },
       },
       default = {
-        messages = { "BufferInputFromKey" },
+        messages = { "UpdateInputBufferFromKey" },
       },
     },
   }
@@ -110,7 +114,7 @@ local function map_multi(input, files, placeholder)
   local lines = {}
   for _, file in ipairs(files) do
     local cmd = string.gsub(input, placeholder, "'" .. file .. "'")
-    table.insert(lines, "  " .. cmd)
+    table.insert(lines, cmd)
   end
 
   return lines
@@ -175,25 +179,27 @@ local function setup(args)
 
   xplr.fn.custom.map.render_single_mapping = function(ctx)
     local files, count = get_result_files(ctx.app)
-    local cmd = map_single(ctx.app.input_buffer, files, count)
-    local ui = { " ", "  ❯ " .. ctx.app.input_buffer .. "█", " " }
+    local cmds = map_single(ctx.app.input_buffer, files, count)
 
-    for _, line in ipairs(cmd) do
-      table.insert(ui, "    " .. line)
+    local ui = { " " }
+    for i, cmd in ipairs(cmds) do
+      if i == 1 then
+        table.insert(ui, "❯ " .. cmd)
+      else
+        table.insert(ui, "  " .. cmd)
+      end
     end
-
     return ui
   end
 
   xplr.fn.custom.map.render_multi_mapping = function(ctx)
     local files, _ = get_result_files(ctx.app)
-    local cmd = map_multi(ctx.app.input_buffer, files, args.placeholder)
-    local ui = { " ", "  ❯ " .. ctx.app.input_buffer .. "█", " " }
+    local cmds = map_multi(ctx.app.input_buffer, files, args.placeholder)
 
-    for _, line in ipairs(cmd) do
-      table.insert(ui, "  " .. line)
+    local ui = { " " }
+    for _, cmd in ipairs(cmds) do
+      table.insert(ui, "❯ " .. cmd)
     end
-
     return ui
   end
 
