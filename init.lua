@@ -77,6 +77,7 @@ local function create_map_mode(custom, mode, func, layout, switch)
           messages = {
             "PopMode",
             "ClearSelection",
+            "ExplorePwd",
           },
         },
         ["ctrl-c"] = {
