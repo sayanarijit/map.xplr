@@ -8,7 +8,7 @@ local function parse_args(args)
   end
 
   if args.key == nil then
-    args.key = "B"
+    args.key = "M"
   end
 
   if args.placeholder == nil then
