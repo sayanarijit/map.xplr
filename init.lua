@@ -45,13 +45,11 @@ local function create_map_mode(custom, mode, func, layout, switch)
       Vertical = {
         config = {
           constraints = {
-            { Length = 1 },
             { Min = 1 },
             { Length = 3 },
           },
         },
         splits = {
-          "Nothing",
           layout,
           "InputAndLogs",
         },
