@@ -1,44 +1,117 @@
+---@diagnostic disable
+local xplr = xplr
+---@diagnostic enable
+
+local lines = {}
+
+local Mode = {
+  SINGLE = "single",
+  MULTI = "multi",
+}
+
+local function toggle(mode)
+  if mode == Mode.SINGLE then
+    return Mode.MULTI
+  elseif mode == Mode.MULTI then
+    return Mode.SINGLE
+  end
+end
+
+local function map_single(input, files)
+  lines = {}
+  if #files == 1 then
+    table.insert(lines, input .. " '" .. files[1] .. "'")
+  else
+    table.insert(lines, input .. " \\")
+
+    for i, file in ipairs(files) do
+      if i == #files then
+        table.insert(lines, "  '" .. file .. "'")
+      else
+        table.insert(lines, "  '" .. file .. "' \\")
+      end
+    end
+  end
+end
+
+local function map_multi(input, files, placeholder)
+  lines = {}
+  for _, file in ipairs(files) do
+    local cmd = string.gsub(input, placeholder, "'" .. file .. "'")
+    table.insert(lines, cmd)
+  end
+end
+
+local function map(mode, app, placeholder)
+  local files = {}
+  for _, node in ipairs(app.selection) do
+    table.insert(files, node.absolute_path)
+  end
+
+  if #files == 0 and app.focused_node then
+    table.insert(files, app.focused_node.absolute_path)
+  end
+
+  if mode == Mode.SINGLE then
+    map_single(app.input_buffer or "", files)
+  elseif mode == Mode.MULTI then
+    map_multi(app.input_buffer or "", files, placeholder)
+  end
+end
+
+local function execute()
+  local cmd = table.concat(lines, "\n")
+
+  os.execute(cmd)
+  io.write("\n[press ENTER to continue]")
+  io.flush()
+  _ = io.read()
+end
+
+local function edit(editor)
+  local cmd = table.concat(lines, "\n")
+
+  local tmpname = os.tmpname() .. ".sh"
+
+  local tmpfile_w = assert(io.open(tmpname, "w"))
+  tmpfile_w:write(cmd)
+  tmpfile_w:close()
+
+  os.execute(string.format("%q %q", editor, tmpname))
+
+  lines = {}
+  for line in io.lines(tmpname) do
+    table.insert(lines, line)
+  end
+
+  os.remove(tmpname)
+
+  return {
+    "ResetInputBuffer",
+  }
+end
+
 local function parse_args(args)
-  if args == nil then
-    args = {}
-  end
+  args = args or {}
 
-  if args.mode == nil then
-    args.mode = "default"
-  end
+  args.mode = args.mode or "default"
 
-  if args.key == nil then
-    args.key = "M"
-  end
+  args.key = args.key or "M"
 
-  if args.placeholder == nil then
-    args.placeholder = "{}"
-  end
+  args.placeholder = args.placeholder or "{}"
 
   if args.prefer_multi_map == nil then
     args.prefer_multi_map = false
   end
 
+  if args.editor == nil then
+    args.editor = os.getenv("EDITOR") or "vim"
+  end
+
   return args
 end
 
-local function get_result_files(app)
-  local files = {}
-  local count = 0
-  for i, node in ipairs(app.selection) do
-    count = i
-    table.insert(files, node.absolute_path)
-  end
-
-  if count == 0 and app.focused_node then
-    table.insert(files, app.focused_node.absolute_path)
-    count = 1
-  end
-
-  return files, count
-end
-
-local function create_map_mode(custom, mode, func, layout, switch)
+local function create_map_mode(custom, mode, editor)
   custom["map_" .. mode] = {
     name = "map " .. mode,
     layout = {
@@ -50,7 +123,14 @@ local function create_map_mode(custom, mode, func, layout, switch)
           },
         },
         splits = {
-          layout,
+          {
+            CustomContent = {
+              title = "visual " .. mode .. " mapping",
+              body = {
+                DynamicList = { render = "custom.map.render_" .. mode .. "_mapping" },
+              },
+            },
+          },
           "InputAndLogs",
         },
       },
@@ -60,14 +140,21 @@ local function create_map_mode(custom, mode, func, layout, switch)
         enter = {
           help = "execute",
           messages = {
-            { CallLua = func },
+            { CallLua = "custom.map.execute" },
+          },
+        },
+        ["ctrl-e"] = {
+          help = "edit in " .. editor,
+          messages = {
+            { CallLua = "custom.map.edit" },
           },
         },
         tab = {
-          help = "switch to " .. switch .. " mapping",
+          help = "map " .. toggle(mode),
           messages = {
             "PopModeKeepingInputBuffer",
-            { SwitchModeCustomKeepingInputBuffer = "map_" .. switch },
+            { SwitchModeCustomKeepingInputBuffer = "map_" .. toggle(mode) },
+            { CallLuaSilently = "custom.map.update_" .. toggle(mode) },
           },
         },
         esc = {
@@ -84,58 +171,16 @@ local function create_map_mode(custom, mode, func, layout, switch)
         },
       },
       default = {
-        messages = { "UpdateInputBufferFromKey" },
+        messages = {
+          "UpdateInputBufferFromKey",
+          { CallLuaSilently = "custom.map.update_" .. mode },
+        },
       },
     },
   }
 end
 
-local function map_single(input, files, count)
-  local cmd = {}
-  if count == 1 then
-    table.insert(cmd, input .. " '" .. files[1] .. "'")
-  else
-    table.insert(cmd, input .. " \\")
-
-    for i, file in ipairs(files) do
-      if i == count then
-        table.insert(cmd, "  '" .. file .. "'")
-      else
-        table.insert(cmd, "  '" .. file .. "' \\")
-      end
-    end
-  end
-
-  return cmd
-end
-
-local function map_multi(input, files, placeholder)
-  local lines = {}
-  for _, file in ipairs(files) do
-    local cmd = string.gsub(input, placeholder, "'" .. file .. "'")
-    table.insert(lines, cmd)
-  end
-
-  return lines
-end
-
-local single_map_layout = {
-  CustomContent = {
-    title = "visual single mapping",
-    body = { DynamicList = { render = "custom.map.render_single_mapping" } },
-  },
-}
-
-local multi_map_layout = {
-  CustomContent = {
-    title = "visual multi mapping",
-    body = { DynamicList = { render = "custom.map.render_multi_mapping" } },
-  },
-}
-
 local function setup(args)
-  local xplr = xplr
-
   args = parse_args(args)
 
   if args.prefer_multi_map then
@@ -143,8 +188,9 @@ local function setup(args)
       help = "map to multiple commands",
       messages = {
         "PopMode",
-        { BufferInput = "" },
-        { SwitchModeCustomKeepingInputBuffer = "map_multi" },
+        { SetInputBuffer = "" },
+        { CallLuaSilently = "custom.map.update_" .. Mode.MULTI },
+        { SwitchModeCustomKeepingInputBuffer = "map_" .. Mode.MULTI },
       },
     }
   else
@@ -152,91 +198,52 @@ local function setup(args)
       help = "map to single command",
       messages = {
         "PopMode",
-        { BufferInput = "" },
-        { SwitchModeCustomKeepingInputBuffer = "map_single" },
+        { SetInputBuffer = "" },
+        { CallLuaSilently = "custom.map.update_" .. Mode.SINGLE },
+        { SwitchModeCustomKeepingInputBuffer = "map_" .. Mode.SINGLE },
       },
     }
   end
 
-  create_map_mode(
-    xplr.config.modes.custom,
-    "single",
-    "custom.map.execute_single",
-    single_map_layout,
-    "multi"
-  )
-
-  create_map_mode(
-    xplr.config.modes.custom,
-    "multi",
-    "custom.map.execute_multi",
-    multi_map_layout,
-    "single"
-  )
+  create_map_mode(xplr.config.modes.custom, Mode.SINGLE, args.editor)
+  create_map_mode(xplr.config.modes.custom, Mode.MULTI, args.editor)
 
   xplr.fn.custom.map = {}
 
-  xplr.fn.custom.map.render_single_mapping = function(ctx)
-    local files, count = get_result_files(ctx.app)
-    local cmds = map_single(ctx.app.input_buffer, files, count)
-
+  xplr.fn.custom.map.render_single_mapping = function(_)
     local ui = { " " }
-    for i, cmd in ipairs(cmds) do
+    for i, line in ipairs(lines) do
       if i == 1 then
-        table.insert(ui, "❯ " .. cmd)
+        table.insert(ui, "❯ " .. line)
       else
-        table.insert(ui, "  " .. cmd)
+        table.insert(ui, "  " .. line)
       end
     end
     return ui
   end
 
-  xplr.fn.custom.map.render_multi_mapping = function(ctx)
-    local files, _ = get_result_files(ctx.app)
-    local cmds = map_multi(ctx.app.input_buffer, files, args.placeholder)
-
+  xplr.fn.custom.map.render_multi_mapping = function(_)
     local ui = { " " }
-    for _, cmd in ipairs(cmds) do
-      table.insert(ui, "❯ " .. cmd)
+    for _, line in ipairs(lines) do
+      table.insert(ui, "❯ " .. line)
     end
     return ui
   end
 
-  xplr.fn.custom.map.execute_single = function(app)
-    if not app.input_buffer or app.input_buffer == "" then
-      return {
-        "PopMode",
-        "ClearSelection",
-      }
-    end
-
-    local files, count = get_result_files(app)
-    local cmd = table.concat(map_single(app.input_buffer, files, count), "\n")
-
-    os.execute(cmd)
-    io.write("\n[press ENTER to continue]")
-    io.flush()
-    io.read()
+  xplr.fn.custom.map.execute = function(app)
+    return execute(app)
   end
 
-  xplr.fn.custom.map.execute_multi = function(app)
-    if not app.input_buffer or app.input_buffer == "" then
-      return {
-        "PopMode",
-        "ClearSelection",
-      }
-    end
+  xplr.fn.custom.map.edit = function(_)
+    return edit(args.editor)
+  end
 
-    local files, _ = get_result_files(app)
-    local cmd = table.concat(
-      map_multi(app.input_buffer, files, args.placeholder),
-      "\n"
-    )
+  xplr.fn.custom.map.update_single = function(app)
+    return map(Mode.SINGLE, app, args.placeholder)
+  end
 
-    os.execute(cmd)
-    io.write("\n[press ENTER to continue]")
-    io.flush()
-    io.read()
+  xplr.fn.custom.map.update_multi = function(app)
+    return map(Mode.MULTI, app, args.placeholder)
   end
 end
 

@@ -42,12 +42,14 @@ None
   require("map").setup{
     mode = "default",
     key = "M",
+    editor = os.getenv("EDITOR") or "vim",
     placeholder = "{}"
     prefer_multi_map = false,
   }
 
   -- Type `M` to switch to single map mode.
   -- Then press `tab` to switch between single and multi map modes.
+  -- Press `ctrl-e` to edit the command using your editor.
   ```
 
 ## Features
@@ -55,4 +57,5 @@ None
 - All the great features from [xargs.xplr](https://github.com/sayanarijit/xargs.xplr).
 - File paths will be auto quoted.
 - Press `tab` to easily switch map mode without losing any context.
+- Press `ctrl-e` to edit the commands using your editor.
 - Visually inspect and interactively edit commands.
