@@ -1,4 +1,4 @@
-https://user-images.githubusercontent.com/11632726/136155585-6f1c0047-c7cb-463e-8ef4-bd82ddbfbd5b.mp4
+https://user-images.githubusercontent.com/11632726/174024410-3fd75ca0-3ec8-4ef4-afcf-7ac002e5adbb.mp4
 
 Visually inspect and interactively execute batch commands using xplr.
 It's like [xargs.xplr](https://github.com/sayanarijit/xargs.xplr) but better.
