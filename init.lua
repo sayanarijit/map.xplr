@@ -77,7 +77,7 @@ local function edit(editor)
   tmpfile_w:write(cmd)
   tmpfile_w:close()
 
-  os.execute(string.format("%q %q", editor, tmpname))
+  os.execute(string.format("%s %q", editor, tmpname))
 
   lines = {}
   for line in io.lines(tmpname) do
