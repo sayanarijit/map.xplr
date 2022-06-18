@@ -230,8 +230,8 @@ local function setup(args)
     return ui
   end
 
-  xplr.fn.custom.map.execute = function(app)
-    return execute(app)
+  xplr.fn.custom.map.execute = function(_)
+    return execute()
   end
 
   xplr.fn.custom.map.edit = function(_)
