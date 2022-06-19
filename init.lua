@@ -185,7 +185,7 @@ local function setup(args)
 
   local mode = args.mode
 
-  if type(args.mode) == "string" then
+  if type(mode) == "string" then
     mode = xplr.config.modes.builtin[mode]
   end
 
@@ -200,7 +200,7 @@ local function setup(args)
       },
     }
   else
-    mode.on_key[args.key] = {
+    mode.key_bindings.on_key[args.key] = {
       help = "map to single command",
       messages = {
         "PopMode",
