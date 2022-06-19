@@ -40,7 +40,7 @@ None
   -- Or
 
   require("map").setup{
-    mode = "default",
+    mode = "default"  -- or `xplr.config.modes.builtin.default`,
     key = "M",
     editor = os.getenv("EDITOR") or "vim",
     placeholder = "{}"

@@ -183,8 +183,14 @@ end
 local function setup(args)
   args = parse_args(args)
 
+  local mode = args.mode
+
+  if type(args.mode) == "string" then
+    mode = xplr.config.modes.builtin[mode]
+  end
+
   if args.prefer_multi_map then
-    xplr.config.modes.builtin[args.mode].key_bindings.on_key[args.key] = {
+    mode.key_bindings.on_key[args.key] = {
       help = "map to multiple commands",
       messages = {
         "PopMode",
@@ -194,7 +200,7 @@ local function setup(args)
       },
     }
   else
-    xplr.config.modes.builtin[args.mode].key_bindings.on_key[args.key] = {
+    mode.on_key[args.key] = {
       help = "map to single command",
       messages = {
         "PopMode",
