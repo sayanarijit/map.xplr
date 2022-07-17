@@ -17,45 +17,50 @@ local function toggle(mode)
   end
 end
 
-local function map_single(input, files)
+local function map_single(input, nodes)
   lines = {}
-  if #files == 1 then
-    table.insert(lines, input .. " '" .. files[1] .. "'")
+  if #nodes == 1 then
+    table.insert(lines, input .. " '" .. nodes[1].absolute_path .. "'")
   else
     table.insert(lines, input .. " \\")
 
-    for i, file in ipairs(files) do
-      if i == #files then
-        table.insert(lines, "  '" .. file .. "'")
+    for i, node in ipairs(nodes) do
+      if i == #nodes then
+        table.insert(lines, "  '" .. node.absolute_path .. "'")
       else
-        table.insert(lines, "  '" .. file .. "' \\")
+        table.insert(lines, "  '" .. node.absolute_path .. "' \\")
       end
     end
   end
 end
 
-local function map_multi(input, files, placeholder)
+local function map_multi(input, nodes, placeholder, custom_placeholders)
   lines = {}
-  for _, file in ipairs(files) do
-    local cmd = string.gsub(input, placeholder, "'" .. file .. "'")
+  for _, node in ipairs(nodes) do
+    local cmd = string.gsub(input, placeholder, "'" .. node.absolute_path .. "'")
+
+    for p, fn in pairs(custom_placeholders) do
+      cmd = string.gsub(cmd, p, "'" .. fn(node) .. "'")
+    end
+
     table.insert(lines, cmd)
   end
 end
 
-local function map(mode, app, placeholder)
-  local files = {}
+local function map(mode, app, placeholder, custom_placeholders)
+  local nodes = {}
   for _, node in ipairs(app.selection) do
-    table.insert(files, node.absolute_path)
+    table.insert(nodes, node)
   end
 
-  if #files == 0 and app.focused_node then
-    table.insert(files, app.focused_node.absolute_path)
+  if #nodes == 0 and app.focused_node then
+    table.insert(nodes, app.focused_node)
   end
 
   if mode == Mode.SINGLE then
-    map_single(app.input_buffer or "", files)
+    map_single(app.input_buffer or "", nodes)
   elseif mode == Mode.MULTI then
-    map_multi(app.input_buffer or "", files, placeholder)
+    map_multi(app.input_buffer or "", nodes, placeholder, custom_placeholders)
   end
 end
 
@@ -99,6 +104,33 @@ local function parse_args(args)
   args.key = args.key or "M"
 
   args.placeholder = args.placeholder or "{}"
+
+  args.custom_placeholders = args.custom_placeholders
+    or {
+      ["{abs}"] = function(node)
+        return node.absolute_path
+      end,
+
+      ["{rel}"] = function(node)
+        return node.relative_path
+      end,
+
+      ["{name}"] = function(node)
+        return node.relative_path:sub(1, -(#node.extension + 2))
+      end,
+
+      ["{ext}"] = function(node)
+        return node.extension
+      end,
+
+      ["{mime}"] = function(node)
+        return node.mime_essence
+      end,
+
+      ["{size}"] = function(node)
+        return node.size
+      end,
+    }
 
   if args.prefer_multi_map == nil then
     args.prefer_multi_map = false
@@ -245,11 +277,11 @@ local function setup(args)
   end
 
   xplr.fn.custom.map.update_single = function(app)
-    return map(Mode.SINGLE, app, args.placeholder)
+    return map(Mode.SINGLE, app, args.placeholder, args.custom_placeholders)
   end
 
   xplr.fn.custom.map.update_multi = function(app)
-    return map(Mode.MULTI, app, args.placeholder)
+    return map(Mode.MULTI, app, args.placeholder, args.custom_placeholders)
   end
 end
 

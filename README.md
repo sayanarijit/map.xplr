@@ -43,8 +43,16 @@ None
     mode = "default"  -- or `xplr.config.modes.builtin.default`,
     key = "M",
     editor = os.getenv("EDITOR") or "vim",
-    placeholder = "{}"
     prefer_multi_map = false,
+    placeholder = "{}",
+    custom_placeholders = {
+      ["{abs}"] = function(node) return node.absolute_path end,
+      ["{rel}"] = function(node) return node.relative_path end,
+      ["{name}"] = function(node) return node.relative_path:sub(1, -(#node.extension + 2)) end,
+      ["{ext}"] = function(node) return node.extension end,
+      ["{mime}"] = function(node) return node.mime_essence end,
+      ["{size}"] = function(node) return node.size end,
+    },
   }
 
   -- Type `M` to switch to single map mode.
@@ -56,6 +64,7 @@ None
 
 - All the great features from [xargs.xplr](https://github.com/sayanarijit/xargs.xplr).
 - File paths will be auto quoted.
+- Use custom placeholders for custom file properties.
 - Press `tab` to easily switch map mode without losing any context.
 - Press `ctrl-e` to edit the commands using your editor.
 - Visually inspect and interactively edit commands.
