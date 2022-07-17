@@ -1,4 +1,14 @@
+# map.xplr
+
+Visually inspect and interactively execute batch commands using xplr
+
+### Basic Demo
+
 https://user-images.githubusercontent.com/11632726/174024410-3fd75ca0-3ec8-4ef4-afcf-7ac002e5adbb.mp4
+
+### Oraganize Files
+
+https://user-images.githubusercontent.com/11632726/179403355-e1647635-e825-4db2-8b3c-71843a5d16f9.mp4
 
 Visually inspect and interactively execute batch commands using xplr.
 It's like [xargs.xplr](https://github.com/sayanarijit/xargs.xplr) but better.
