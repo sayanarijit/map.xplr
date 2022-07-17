@@ -140,10 +140,14 @@ local function parse_args(args)
     args.editor = os.getenv("EDITOR") or "vim"
   end
 
+  if args.editor_key == nil then
+    args.editor_key = "ctrl-o"
+  end
+
   return args
 end
 
-local function create_map_mode(custom, mode, editor)
+local function create_map_mode(custom, mode, editor, editor_key)
   custom["map_" .. mode] = {
     name = "map " .. mode,
     layout = {
@@ -175,8 +179,8 @@ local function create_map_mode(custom, mode, editor)
             { CallLua = "custom.map.execute" },
           },
         },
-        ["ctrl-e"] = {
-          help = "edit in " .. editor,
+        [editor_key] = {
+          help = "open in " .. editor,
           messages = {
             { CallLua = "custom.map.edit" },
           },
@@ -243,8 +247,8 @@ local function setup(args)
     }
   end
 
-  create_map_mode(xplr.config.modes.custom, Mode.SINGLE, args.editor)
-  create_map_mode(xplr.config.modes.custom, Mode.MULTI, args.editor)
+  create_map_mode(xplr.config.modes.custom, Mode.SINGLE, args.editor, args.editor_key)
+  create_map_mode(xplr.config.modes.custom, Mode.MULTI, args.editor, args.editor_key)
 
   xplr.fn.custom.map = {}
 

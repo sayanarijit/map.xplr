@@ -43,6 +43,7 @@ None
     mode = "default"  -- or `xplr.config.modes.builtin.default`,
     key = "M",
     editor = os.getenv("EDITOR") or "vim",
+    editor_key = "ctrl-o",
     prefer_multi_map = false,
     placeholder = "{}",
     custom_placeholders = {
@@ -57,7 +58,7 @@ None
 
   -- Type `M` to switch to single map mode.
   -- Then press `tab` to switch between single and multi map modes.
-  -- Press `ctrl-e` to edit the command using your editor.
+  -- Press `ctrl-o` to edit the command using your editor.
   ```
 
 ## Features
@@ -66,5 +67,5 @@ None
 - File paths will be auto quoted.
 - Use custom placeholders for custom file properties.
 - Press `tab` to easily switch map mode without losing any context.
-- Press `ctrl-e` to edit the commands using your editor.
+- Press `ctrl-o` to open the command in your editor.
 - Visually inspect and interactively edit commands.
