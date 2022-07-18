@@ -60,7 +60,7 @@ None
     placeholder = "{}",
     custom_placeholders = {
       ["{abs}"] = function(node)
-        -- See https://xplr.dev/en/lua-function-calls?highlight=Node#node
+        -- See https://xplr.dev/en/lua-function-calls#node
         return node.absolute_path
       end,
 
