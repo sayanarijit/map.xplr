@@ -1,6 +1,6 @@
 # map.xplr
 
-Visually inspect and interactively execute batch commands using xplr
+Visually inspect and interactively execute batch commands using [xplr](https://xplr.dev)
 
 ### Basic Demo
 
