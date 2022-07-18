@@ -21,6 +21,37 @@ local function toggle(mode)
   end
 end
 
+local placeholders = {
+
+  ["{abs}"] = function(node)
+    return node.absolute_path
+  end,
+
+  ["{rel}"] = function(node)
+    return node.relative_path
+  end,
+
+  ["{name}"] = function(node)
+    if #node.extension == 0 then
+      return node.relative_path
+    else
+      return node.relative_path:sub(1, -(#node.extension + 2))
+    end
+  end,
+
+  ["{ext}"] = function(node)
+    return node.extension
+  end,
+
+  ["{mime}"] = function(node)
+    return node.mime_essence
+  end,
+
+  ["{size}"] = function(node)
+    return node.size
+  end,
+}
+
 local function map_single(input, nodes)
   lines = {}
   if #nodes == 1 then
@@ -109,36 +140,7 @@ local function parse_args(args)
 
   args.placeholder = args.placeholder or "{}"
 
-  args.custom_placeholders = args.custom_placeholders
-    or {
-      ["{abs}"] = function(node)
-        return node.absolute_path
-      end,
-
-      ["{rel}"] = function(node)
-        return node.relative_path
-      end,
-
-      ["{name}"] = function(node)
-        if #node.extension == 0 then
-          return node.relative_path
-        else
-          return node.relative_path:sub(1, -(#node.extension + 2))
-        end
-      end,
-
-      ["{ext}"] = function(node)
-        return node.extension
-      end,
-
-      ["{mime}"] = function(node)
-        return node.mime_essence
-      end,
-
-      ["{size}"] = function(node)
-        return node.size
-      end,
-    }
+  args.custom_placeholders = args.custom_placeholders or placeholders
 
   if args.prefer_multi_map == nil then
     args.prefer_multi_map = false
@@ -297,4 +299,4 @@ local function setup(args)
   end
 end
 
-return { setup = setup }
+return { setup = setup, placeholders = placeholders }

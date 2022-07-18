@@ -49,7 +49,9 @@ None
 
   -- Or
 
-  require("map").setup{
+  local map = require("map")
+
+  map.setup{
     mode = "default"  -- or `xplr.config.modes.builtin.default`,
     key = "M",
     editor = os.getenv("EDITOR") or "vim",
@@ -57,36 +59,12 @@ None
     prefer_multi_map = false,
     placeholder = "{}",
     custom_placeholders = {
-      -- See https://xplr.dev/en/lua-function-calls?highlight=Node#node
-
       ["{abs}"] = function(node)
+        -- See https://xplr.dev/en/lua-function-calls?highlight=Node#node
         return node.absolute_path
       end,
 
-      ["{rel}"] = function(node)
-        return node.relative_path
-      end,
-
-      ["{name}"] = function(node)
-        if #node.extension == 0 then
-          return node.relative_path
-        else
-          return node.relative_path:sub(1, -(#node.extension + 2))
-        end
-      end,
-
-      ["{ext}"] = function(node)
-        return node.extension
-      end,
-
-      ["{mime}"] = function(node)
-        return node.mime_essence
-      end,
-
-      ["{size}"] = function(node)
-        return node.size
-      end,
-
+      ["{name}"] = map.placeholders["{name}"]
     },
   }
 
