@@ -262,7 +262,7 @@ local function setup(args)
 
   xplr.fn.custom.map = {}
 
-  xplr.fn.custom.map.render_single_mapping = function(_)
+  xplr.fn.custom.map.render_single_mapping = function(ctx)
     local ui = { " " }
     for i, line in ipairs(lines) do
       if i == 1 then
@@ -270,14 +270,22 @@ local function setup(args)
       else
         table.insert(ui, "  " .. line)
       end
+
+      if i >= ctx.layout_size.height then
+        break
+      end
     end
     return ui
   end
 
-  xplr.fn.custom.map.render_multi_mapping = function(_)
+  xplr.fn.custom.map.render_multi_mapping = function(ctx)
     local ui = { " " }
-    for _, line in ipairs(lines) do
+    for i, line in ipairs(lines) do
       table.insert(ui, "❯ " .. line)
+
+      if i >= ctx.layout_size.height then
+        break
+      end
     end
     return ui
   end
