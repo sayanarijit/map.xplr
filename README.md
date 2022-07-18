@@ -57,12 +57,36 @@ None
     prefer_multi_map = false,
     placeholder = "{}",
     custom_placeholders = {
-      ["{abs}"] = function(node) return node.absolute_path end,
-      ["{rel}"] = function(node) return node.relative_path end,
-      ["{name}"] = function(node) return node.relative_path:sub(1, -(#node.extension + 2)) end,
-      ["{ext}"] = function(node) return node.extension end,
-      ["{mime}"] = function(node) return node.mime_essence end,
-      ["{size}"] = function(node) return node.size end,
+      -- See https://xplr.dev/en/lua-function-calls?highlight=Node#node
+
+      ["{abs}"] = function(node)
+        return node.absolute_path
+      end,
+
+      ["{rel}"] = function(node)
+        return node.relative_path
+      end,
+
+      ["{name}"] = function(node)
+        if #node.extension == 0 then
+          return node.relative_path
+        else
+          return node.relative_path:sub(1, -(#node.extension + 2))
+        end
+      end,
+
+      ["{ext}"] = function(node)
+        return node.extension
+      end,
+
+      ["{mime}"] = function(node)
+        return node.mime_essence
+      end,
+
+      ["{size}"] = function(node)
+        return node.size
+      end,
+
     },
   }
 

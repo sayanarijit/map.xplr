@@ -9,6 +9,10 @@ local Mode = {
   MULTI = "multi",
 }
 
+local function quote(str)
+  return "'" .. string.gsub(str, "'", [['"'"']]) .. "'"
+end
+
 local function toggle(mode)
   if mode == Mode.SINGLE then
     return Mode.MULTI
@@ -20,15 +24,15 @@ end
 local function map_single(input, nodes)
   lines = {}
   if #nodes == 1 then
-    table.insert(lines, input .. " '" .. nodes[1].absolute_path .. "'")
+    table.insert(lines, input .. " " .. quote(nodes[1].absolute_path))
   else
     table.insert(lines, input .. " \\")
 
     for i, node in ipairs(nodes) do
       if i == #nodes then
-        table.insert(lines, "  '" .. node.absolute_path .. "'")
+        table.insert(lines, "  " .. quote(node.absolute_path))
       else
-        table.insert(lines, "  '" .. node.absolute_path .. "' \\")
+        table.insert(lines, "  " .. quote(node.absolute_path) .. " \\")
       end
     end
   end
@@ -37,10 +41,10 @@ end
 local function map_multi(input, nodes, placeholder, custom_placeholders)
   lines = {}
   for _, node in ipairs(nodes) do
-    local cmd = string.gsub(input, placeholder, "'" .. node.absolute_path .. "'")
+    local cmd = string.gsub(input, placeholder, quote(node.absolute_path))
 
     for p, fn in pairs(custom_placeholders) do
-      cmd = string.gsub(cmd, p, "'" .. fn(node) .. "'")
+      cmd = string.gsub(cmd, p, quote(fn(node)))
     end
 
     table.insert(lines, cmd)
@@ -116,7 +120,11 @@ local function parse_args(args)
       end,
 
       ["{name}"] = function(node)
-        return node.relative_path:sub(1, -(#node.extension + 2))
+        if #node.extension == 0 then
+          return node.relative_path
+        else
+          return node.relative_path:sub(1, -(#node.extension + 2))
+        end
       end,
 
       ["{ext}"] = function(node)
