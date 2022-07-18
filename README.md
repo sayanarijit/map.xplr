@@ -59,9 +59,9 @@ None
     prefer_multi_map = false,
     placeholder = "{}",
     custom_placeholders = {
-      ["{abs}"] = function(node)
+      ["{ext}"] = function(node)
         -- See https://xplr.dev/en/lua-function-calls#node
-        return node.absolute_path
+        return node.extension
       end,
 
       ["{name}"] = map.placeholders["{name}"]
