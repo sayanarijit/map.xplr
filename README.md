@@ -77,7 +77,8 @@ None
 
 - All the great features from [xargs.xplr](https://github.com/sayanarijit/xargs.xplr).
 - File paths will be auto quoted.
-- Use custom placeholders for custom file properties.
 - Press `tab` to easily switch map mode without losing any context.
 - Press `ctrl-o` to open the command in your editor.
 - Visually inspect and interactively edit commands.
+- Use custom placeholders for custom file properties.
+  By detault you get - `{abs}` or `{}`, `{rel}`, `{name}`, `{ext}`, `{mime}`, `{size}`.
