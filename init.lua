@@ -9,8 +9,14 @@ local Mode = {
   MULTI = "multi",
 }
 
-local function quote(str)
-  return "'" .. string.gsub(str, "'", [['"'"']]) .. "'"
+local quote = nil
+
+if xplr.util then
+  quote = xplr.util.shell_quote
+else
+  quote = function(str)
+    return "'" .. string.gsub(str, "'", [['"'"']]) .. "'"
+  end
 end
 
 local function toggle(mode)
