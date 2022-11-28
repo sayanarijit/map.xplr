@@ -52,7 +52,7 @@ None
   local map = require("map")
 
   map.setup{
-    mode = "default"  -- or `xplr.config.modes.builtin.default`,
+    mode = "default",  -- or `xplr.config.modes.builtin.default`
     key = "M",
     editor = os.getenv("EDITOR") or "vim",
     editor_key = "ctrl-o",
