@@ -29,26 +29,26 @@ end
 
 local placeholders = {
   ["{abs}"] = function(node)
-    return node.absolute_path
+    return quote(node.absolute_path)
   end,
   ["{rel}"] = function(node)
-    return node.relative_path
+    return quote(node.relative_path)
   end,
   ["{name}"] = function(node)
     if #node.extension == 0 then
-      return node.relative_path
+      return quote(node.relative_path)
     else
-      return node.relative_path:sub(1, -(#node.extension + 2))
+      return quote(node.relative_path:sub(1, -(#node.extension + 2)))
     end
   end,
   ["{ext}"] = function(node)
-    return node.extension
+    return quote(node.extension)
   end,
   ["{mime}"] = function(node)
-    return node.mime_essence
+    return quote(node.mime_essence)
   end,
   ["{size}"] = function(node)
-    return node.size
+    return quote(node.size)
   end,
 }
 
@@ -69,20 +69,45 @@ local function map_single(input, nodes)
   end
 end
 
-local function map_multi(input, nodes, placeholder, custom_placeholders)
+local function map_multi(input, nodes, placeholder, custom_placeholders, spacer)
   lines = {}
+  local rows = {}
+  local colwidths = {}
   for _, node in ipairs(nodes) do
     local cmd = string.gsub(input, placeholder, quote(node.absolute_path))
 
     for p, fn in pairs(custom_placeholders) do
-      cmd = string.gsub(cmd, p, quote(fn(node)))
+      cmd = string.gsub(cmd, p, fn(node))
     end
 
-    table.insert(lines, cmd)
+    -- split cmd into columns
+    local cols = {}
+    for col in string.gmatch(cmd, "[^" .. spacer .. "]+") do
+      table.insert(cols, col)
+    end
+
+    -- find max width of each column
+    for i, col in ipairs(cols) do
+      if not colwidths[i] or #col > colwidths[i] then
+        colwidths[i] = #col
+      end
+    end
+
+    table.insert(rows, cols)
+  end
+
+  -- pad columns
+  for i, cols in ipairs(rows) do
+    for j, col in ipairs(cols) do
+      rows[i][j] = col .. string.rep(" ", colwidths[j] - #col)
+    end
+
+    local line = table.concat(cols, " ")
+    table.insert(lines, line)
   end
 end
 
-local function map(mode, app, placeholder, custom_placeholders)
+local function map(mode, app, placeholder, custom_placeholders, spacer)
   local nodes = {}
   for _, node in ipairs(app.selection) do
     table.insert(nodes, node)
@@ -95,7 +120,7 @@ local function map(mode, app, placeholder, custom_placeholders)
   if mode == Mode.SINGLE then
     map_single(app.input_buffer or "", nodes)
   elseif mode == Mode.MULTI then
-    map_multi(app.input_buffer or "", nodes, placeholder, custom_placeholders)
+    map_multi(app.input_buffer or "", nodes, placeholder, custom_placeholders, spacer)
   end
 end
 
@@ -139,6 +164,8 @@ local function parse_args(args)
   args.key = args.key or "M"
 
   args.placeholder = args.placeholder or "{}"
+
+  args.spacer = args.spacer or "{_}"
 
   args.custom_placeholders = args.custom_placeholders or placeholders
 
@@ -302,7 +329,7 @@ local function setup(args)
   end
 
   xplr.fn.custom.map.update_multi = function(app)
-    return map(Mode.MULTI, app, args.placeholder, args.custom_placeholders)
+    return map(Mode.MULTI, app, args.placeholder, args.custom_placeholders, args.spacer)
   end
 end
 
