@@ -58,13 +58,14 @@ None
     editor_key = "ctrl-o",
     prefer_multi_map = false,
     placeholder = "{}",
+    spacer = "{_}",
     custom_placeholders = {
       ["{ext}"] = function(node)
         -- See https://xplr.dev/en/lua-function-calls#node
-        return node.extension
+        return xplr.util.shell_quote(node.extension)
       end,
 
-      ["{name}"] = map.placeholders["{name}"]
+      ["{name}"] = map.placeholders["{name}"],
     },
   }
 
@@ -80,5 +81,6 @@ None
 - Press `tab` to easily switch map mode without losing any context.
 - Press `ctrl-o` to open the command in your editor.
 - Visually inspect and interactively edit commands.
+- Use placeholder `{}` and spacer `{_}` to format commands in multi map mode.
 - Use custom placeholders for custom file properties.
-  By detault you get - `{abs}` or `{}`, `{rel}`, `{name}`, `{ext}`, `{mime}`, `{size}`.
+  By detault you get - `{abs}`, `{rel}`, `{name}`, `{ext}`, `{mime}`, `{size}`.
