@@ -49,11 +49,12 @@ local placeholders = {
     return quote(pad .. meta.index)
   end,
   ["{num}"] = function(_, meta)
-    return quote(meta.number)
+    return quote(meta.index + 1)
   end,
   ["{0num}"] = function(_, meta)
-    local pad = string.rep("0", #tostring(meta.total) - #tostring(meta.number))
-    return quote(pad .. meta.number)
+    local num = meta.index + 1
+    local pad = string.rep("0", #tostring(meta.total) - #tostring(num))
+    return quote(pad .. num)
   end,
   ["{total}"] = function(_, meta)
     return quote(meta.total)
@@ -131,9 +132,9 @@ local function map_multi(input, nodes, placeholder, custom_placeholders, spacer)
   local rows = {}
   local colwidths = {}
   local total = #nodes
-  for number, node in ipairs(nodes) do
+  for num, node in ipairs(nodes) do
     local cmd = string.gsub(input, placeholder, quote(node.absolute_path))
-    local meta = { index = number - 1, number = number, total = total }
+    local meta = { index = num - 1, total = total }
 
     for p, fn in pairs(custom_placeholders) do
       cmd = string.gsub(cmd, p, fn(node, meta))
