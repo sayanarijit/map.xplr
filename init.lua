@@ -282,29 +282,16 @@ local function create_map_mode(custom, mode, editor, editor_key)
   custom[modename] = {
     name = "map " .. mode,
     layout = {
-      Horizontal = {
+      Vertical = {
         config = {
           constraints = {
-            { Percentage = 70 },
-            { Percentage = 30 },
+            { Min = 1 },
+            { Length = 3 },
           },
         },
         splits = {
-          {
-            Vertical = {
-              config = {
-                constraints = {
-                  { Min = 1 },
-                  { Length = 3 },
-                },
-              },
-              splits = {
-                { Dynamic = "custom.map.render_" .. mode .. "_mapping" },
-                "InputAndLogs",
-              },
-            },
-          },
-          "HelpMenu",
+          { Dynamic = "custom.map.render_" .. mode .. "_mapping" },
+          "InputAndLogs",
         },
       },
     },
