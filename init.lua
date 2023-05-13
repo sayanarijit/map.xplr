@@ -41,6 +41,23 @@ local function split(str, delimiter)
 end
 
 local placeholders = {
+  ["{idx}"] = function(_, meta)
+    return quote(meta.index)
+  end,
+  ["{0idx}"] = function(_, meta)
+    local pad = string.rep("0", #tostring(meta.total) - #tostring(meta.index))
+    return quote(pad .. meta.index)
+  end,
+  ["{num}"] = function(_, meta)
+    return quote(meta.number)
+  end,
+  ["{0num}"] = function(_, meta)
+    local pad = string.rep("0", #tostring(meta.total) - #tostring(meta.number))
+    return quote(pad .. meta.number)
+  end,
+  ["{total}"] = function(_, meta)
+    return quote(meta.total)
+  end,
   ["{abs}"] = function(node)
     return quote(node.absolute_path)
   end,
@@ -62,6 +79,33 @@ local placeholders = {
   end,
   ["{size}"] = function(node)
     return quote(node.size)
+  end,
+  ["{perm}"] = function(node)
+    return quote(table.concat(xplr.util.permissions_octal(node.permissions), ""))
+  end,
+  ["{rwx}"] = function(node)
+    return quote(xplr.util.permissions_rwx(node.permissions))
+  end,
+  ["{dir}"] = function(node)
+    return quote(node.parent)
+  end,
+  ["{uid}"] = function(node)
+    return quote(tostring(node.uid))
+  end,
+  ["{gid}"] = function(node)
+    return quote(tostring(node.gid))
+  end,
+  ["{cdate}"] = function(node)
+    return quote(os.date("%Y-%m-%d", node.created / 1000000000))
+  end,
+  ["{ctime}"] = function(node)
+    return quote(os.date("%H:%M:%S", node.created / 1000000000))
+  end,
+  ["{mdate}"] = function(node)
+    return quote(os.date("%Y-%m-%d", node.last_modified / 1000000000))
+  end,
+  ["{mtime}"] = function(node)
+    return quote(os.date("%H:%M:%S", node.last_modified / 1000000000))
   end,
 }
 
@@ -86,11 +130,13 @@ local function map_multi(input, nodes, placeholder, custom_placeholders, spacer)
   lines = {}
   local rows = {}
   local colwidths = {}
-  for _, node in ipairs(nodes) do
+  local total = #nodes
+  for number, node in ipairs(nodes) do
     local cmd = string.gsub(input, placeholder, quote(node.absolute_path))
+    local meta = { index = number - 1, number = number, total = total }
 
     for p, fn in pairs(custom_placeholders) do
-      cmd = string.gsub(cmd, p, fn(node))
+      cmd = string.gsub(cmd, p, fn(node, meta))
     end
 
     -- split cmd into columns
