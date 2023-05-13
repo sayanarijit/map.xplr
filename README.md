@@ -138,3 +138,4 @@ end
 - Visually inspect and interactively edit commands.
 - Use placeholder `{}` and spacer `{_}` to format commands in multi map mode.
 - Use custom placeholders for custom file properties.
+- Interactive placeholder suggestion.
