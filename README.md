@@ -109,8 +109,7 @@ See [the official documentation](https://xplr.dev/en/lua-function-calls#node).
 It contains the following fields:
 
 - `total`: Total count of the nodes being operated on (used in `{total}`).
-- `index`: 0-based index of the node (used in `{idx}` and `{0idx}`).
-- `number`: 1-based index of the node (used in `{num}` and `{0num}`).
+- `index`: 0-based index of the node (used in `{idx}`, `{0idx}`, `{num}`, `{0num}`).
 
 ### Example
 
