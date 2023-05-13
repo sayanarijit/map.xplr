@@ -2,7 +2,13 @@
 local xplr = xplr
 ---@diagnostic enable
 
-local lines = {}
+local state = {
+  lines = {},
+  available_placeholders = {},
+  suggested_placeholders = {},
+  highlighted_placeholder = 1,
+  partial_match = 0,
+}
 
 local Mode = {
   SINGLE = "single",
@@ -25,6 +31,17 @@ local function toggle(mode)
   elseif mode == Mode.MULTI then
     return Mode.SINGLE
   end
+end
+
+local function render_title(count)
+  local title = " " .. tostring(count)
+  if count == 1 then
+    title = title .. " node selected "
+  else
+    title = title .. " nodes selected "
+  end
+
+  return title
 end
 
 local function split(str, delimiter)
@@ -111,24 +128,26 @@ local placeholders = {
 }
 
 local function map_single(input, nodes)
-  lines = {}
-  if #nodes == 1 then
-    table.insert(lines, input .. " " .. quote(nodes[1].absolute_path))
+  state.lines = {}
+  if #nodes == 0 then
+    return
+  elseif #nodes == 1 then
+    table.insert(state.lines, input .. " " .. quote(nodes[1].absolute_path))
   else
-    table.insert(lines, input .. " \\")
+    table.insert(state.lines, input .. " \\")
 
     for i, node in ipairs(nodes) do
       if i == #nodes then
-        table.insert(lines, "  " .. quote(node.absolute_path))
+        table.insert(state.lines, "  " .. quote(node.absolute_path))
       else
-        table.insert(lines, "  " .. quote(node.absolute_path) .. " \\")
+        table.insert(state.lines, "  " .. quote(node.absolute_path) .. " \\")
       end
     end
   end
 end
 
 local function map_multi(input, nodes, placeholder, custom_placeholders, spacer)
-  lines = {}
+  state.lines = {}
   local rows = {}
   local colwidths = {}
   local total = #nodes
@@ -160,7 +179,28 @@ local function map_multi(input, nodes, placeholder, custom_placeholders, spacer)
     end
 
     local line = table.concat(cols, " ")
-    table.insert(lines, line)
+    table.insert(state.lines, line)
+  end
+
+  -- suggest placeholders
+  state.suggested_placeholders = {}
+  state.partial_match = 0
+  for _, ph in ipairs(state.available_placeholders) do
+    for i = #ph - 1, 1, -1 do
+      local partial = string.sub(ph, 1, i)
+      if string.sub(input, -#partial) == partial then
+        state.partial_match = i
+        table.insert(state.suggested_placeholders, ph)
+        break
+      end
+    end
+  end
+
+  if #state.suggested_placeholders ~= 0 then
+    state.highlighted_placeholder = 1
+    table.sort(state.suggested_placeholders, function(a, b)
+      return #a < #b
+    end)
   end
 end
 
@@ -182,7 +222,7 @@ local function map(mode, app, placeholder, custom_placeholders, spacer)
 end
 
 local function execute()
-  local cmd = table.concat(lines, "\n")
+  local cmd = table.concat(state.lines, "\n")
 
   os.execute(cmd)
   io.write("\n[press ENTER to continue]")
@@ -191,7 +231,7 @@ local function execute()
 end
 
 local function edit(editor)
-  local cmd = table.concat(lines, "\n")
+  local cmd = table.concat(state.lines, "\n")
 
   local tmpname = os.tmpname() .. ".sh"
 
@@ -201,9 +241,9 @@ local function edit(editor)
 
   os.execute(string.format("%s %q", editor, tmpname))
 
-  lines = {}
+  state.lines = {}
   for line in io.lines(tmpname) do
-    table.insert(lines, line)
+    table.insert(state.lines, line)
   end
 
   os.remove(tmpname)
@@ -230,47 +270,50 @@ local function parse_args(args)
     args.prefer_multi_map = false
   end
 
-  if args.editor == nil then
-    args.editor = os.getenv("EDITOR") or "vim"
-  end
+  args.editor = args.editor or os.getenv("EDITOR") or "vim"
 
-  if args.editor_key == nil then
-    args.editor_key = "ctrl-o"
-  end
+  args.editor_key = args.editor_key or "ctrl-o"
 
   return args
 end
 
 local function create_map_mode(custom, mode, editor, editor_key)
-  custom["map_" .. mode] = {
+  local modename = "map_" .. mode
+  custom[modename] = {
     name = "map " .. mode,
     layout = {
-      Vertical = {
+      Horizontal = {
         config = {
           constraints = {
-            { Min = 1 },
-            { Length = 3 },
+            { Percentage = 70 },
+            { Percentage = 30 },
           },
         },
         splits = {
           {
-            CustomContent = {
-              title = "visual " .. mode .. " mapping",
-              body = {
-                DynamicList = { render = "custom.map.render_" .. mode .. "_mapping" },
+            Vertical = {
+              config = {
+                constraints = {
+                  { Min = 1 },
+                  { Length = 3 },
+                },
+              },
+              splits = {
+                { Dynamic = "custom.map.render_" .. mode .. "_mapping" },
+                "InputAndLogs",
               },
             },
           },
-          "InputAndLogs",
+          "HelpMenu",
         },
       },
     },
     key_bindings = {
       on_key = {
         enter = {
-          help = "execute",
+          help = "submit",
           messages = {
-            { CallLua = "custom.map.execute" },
+            { CallLua = "custom.map.submit" },
           },
         },
         [editor_key] = {
@@ -295,7 +338,6 @@ local function create_map_mode(custom, mode, editor, editor_key)
           },
         },
         ["ctrl-c"] = {
-          help = "terminate",
           messages = { "Terminate" },
         },
       },
@@ -307,10 +349,36 @@ local function create_map_mode(custom, mode, editor, editor_key)
       },
     },
   }
+
+  if mode == Mode.MULTI then
+    custom[modename].key_bindings.on_key["up"] = {
+      help = "prev placeholder",
+      messages = {
+        { CallLuaSilently = "custom.map.prev_placeholder" },
+      },
+    }
+
+    custom[modename].key_bindings.on_key["down"] = {
+      help = "next placeholder",
+      messages = {
+        { CallLuaSilently = "custom.map.next_placeholder" },
+      },
+    }
+
+    custom[modename].key_bindings.on_key["ctrl-p"] =
+      custom[modename].key_bindings.on_key["up"]
+    custom[modename].key_bindings.on_key["ctrl-n"] =
+      custom[modename].key_bindings.on_key["down"]
+  end
 end
 
 local function setup(args)
   args = parse_args(args)
+
+  state.available_placeholders = { args.placeholder, args.spacer }
+  for p, _ in pairs(args.custom_placeholders) do
+    table.insert(state.available_placeholders, p)
+  end
 
   local mode = args.mode
 
@@ -346,35 +414,115 @@ local function setup(args)
   xplr.fn.custom.map = {}
 
   xplr.fn.custom.map.render_single_mapping = function(ctx)
-    local ui = { " " }
-    for i, line in ipairs(lines) do
+    local count = #state.lines
+
+    if count == 0 then
+      return {
+        CustomParagraph = {
+          body = xplr.util.paint("\n No node selected...", { fg = "Yellow" }),
+        },
+      }
+    elseif count > 1 then
+      count = count - 1
+    end
+
+    local title = render_title(count)
+    local body = { " " }
+    for i, line in ipairs(state.lines) do
       if i == 1 then
-        table.insert(ui, "❯ " .. line)
+        table.insert(body, "❯ " .. line)
       else
-        table.insert(ui, "  " .. line)
+        table.insert(body, "  " .. line)
       end
 
       if i >= ctx.layout_size.height then
         break
       end
     end
-    return ui
+
+    return {
+      CustomList = {
+        ui = { title = { format = title } },
+        body = body,
+      },
+    }
   end
 
   xplr.fn.custom.map.render_multi_mapping = function(ctx)
-    local ui = { " " }
-    for i, line in ipairs(lines) do
-      table.insert(ui, "❯ " .. line)
+    local count = #state.lines
+    if count == 0 then
+      return {
+        CustomParagraph = {
+          body = xplr.util.paint("\n No node selected...", { fg = "Yellow" }),
+        },
+      }
+    end
 
+    if #state.suggested_placeholders ~= 0 then
+      local title = " suggested placeholders ("
+        .. tostring(state.highlighted_placeholder)
+        .. "/"
+        .. tostring(#state.suggested_placeholders)
+        .. "/"
+        .. tostring(#state.available_placeholders)
+        .. ") "
+
+      local body = { " " }
+      local top = state.highlighted_placeholder
+        - (state.highlighted_placeholder % (ctx.layout_size.height - 3))
+      local bottom = top + ctx.layout_size.height - 3
+      for i, placeholder in ipairs(state.suggested_placeholders) do
+        if i >= top then
+          if i >= bottom then
+            break
+          else
+            if i == state.highlighted_placeholder then
+              placeholder =
+                xplr.util.paint(placeholder, { add_modifiers = { "Reversed" } })
+            end
+            table.insert(body, " " .. placeholder)
+          end
+        end
+      end
+
+      return {
+        CustomList = {
+          ui = { title = { format = title } },
+          body = body,
+        },
+      }
+    end
+
+    local title = render_title(count)
+    local body = { " " }
+    for i, line in ipairs(state.lines) do
+      table.insert(body, "❯ " .. line)
       if i >= ctx.layout_size.height then
         break
       end
     end
-    return ui
+
+    return {
+      CustomList = {
+        ui = { title = { format = title } },
+        body = body,
+      },
+    }
   end
 
-  xplr.fn.custom.map.execute = function(_)
-    return execute()
+  xplr.fn.custom.map.submit = function(app)
+    if #state.suggested_placeholders ~= 0 then
+      local placeholder = state.suggested_placeholders[state.highlighted_placeholder]
+      if placeholder then
+        local input = string.sub(app.input_buffer, 1, -state.partial_match - 1)
+        return {
+          { SetInputBuffer = input .. placeholder },
+          { CallLuaSilently = "custom.map.update_multi" },
+        }
+      end
+    else
+      return execute()
+    end
   end
 
   xplr.fn.custom.map.edit = function(_)
@@ -387,6 +535,28 @@ local function setup(args)
 
   xplr.fn.custom.map.update_multi = function(app)
     return map(Mode.MULTI, app, args.placeholder, args.custom_placeholders, args.spacer)
+  end
+
+  xplr.fn.custom.map.next_placeholder = function(_)
+    if #state.suggested_placeholders == 0 then
+      state.suggested_placeholders = state.available_placeholders
+      state.highlighted_placeholder = 1
+    elseif state.highlighted_placeholder == #state.suggested_placeholders then
+      state.highlighted_placeholder = 1
+    else
+      state.highlighted_placeholder = state.highlighted_placeholder + 1
+    end
+  end
+
+  xplr.fn.custom.map.prev_placeholder = function(_)
+    if #state.suggested_placeholders == 0 then
+      state.suggested_placeholders = state.available_placeholders
+      state.highlighted_placeholder = #state.suggested_placeholders
+    elseif state.highlighted_placeholder == 1 then
+      state.highlighted_placeholder = #state.suggested_placeholders
+    else
+      state.highlighted_placeholder = state.highlighted_placeholder - 1
+    end
   end
 end
 
