@@ -156,7 +156,9 @@ local function map_multi(input, nodes, placeholder, custom_placeholders, spacer)
     local meta = { index = num - 1, total = total }
 
     for p, fn in pairs(custom_placeholders) do
-      cmd = string.gsub(cmd, p, fn(node, meta))
+      if string.find(cmd, p) then
+        cmd = string.gsub(cmd, p, fn(node, meta))
+      end
     end
 
     -- split cmd into columns
