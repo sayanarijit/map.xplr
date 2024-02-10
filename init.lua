@@ -177,7 +177,10 @@ local function map_multi(input, nodes, placeholder, custom_placeholders, spacer)
   -- pad columns
   for i, cols in ipairs(rows) do
     for j, col in ipairs(cols) do
-      rows[i][j] = col .. string.rep(" ", colwidths[j] - #col)
+      -- don't pad the last column
+      if j ~= #cols then
+        rows[i][j] = col .. string.rep(" ", colwidths[j] - #col)
+      end
     end
 
     local line = table.concat(cols, " ")
